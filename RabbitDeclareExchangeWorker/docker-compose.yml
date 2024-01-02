@@ -1,0 +1,27 @@
+version: '3.4'
+
+services:
+  rabbitdeclareexchangeworker:
+    image: ${DOCKER_REGISTRY-}rabbitdeclareexchangeworker
+    build:
+      context: .
+      dockerfile: RabbitDeclareExchangeWorker/Dockerfile
+    depends_on:
+      - rabbitmq
+    networks: 
+      - network
+
+  rabbitmq:    
+    image: rabbitmq:3.12.6-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_VHOST: main
+      RABBITMQ_DEFAULT_USER: mc
+      RABBITMQ_DEFAULT_PASS: mc2
+    ports:
+      - 15672:15672
+    networks: 
+      - network
+      
+networks:
+  network: 
