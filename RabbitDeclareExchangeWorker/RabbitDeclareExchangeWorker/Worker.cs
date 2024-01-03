@@ -99,7 +99,8 @@ namespace RabbitDeclareExchangeWorker
 
             model.ExchangeBind("headers.order.create", "order.create", string.Empty, new Dictionary<string, object>
             {
-                { "integration", true }
+                { "integration", true },
+                { "x-match", "all" }
             });
         }
     }
