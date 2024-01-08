@@ -8,9 +8,9 @@ namespace RabbitDeclareExchangeWorker
         {
             DeclareOrderCreateExchange();
 
-            DeclareTopicExchangeIntegration();
+            DeclareExchangeSystem1();
 
-            DeclareHeadersExchangeIntegration();
+            DeclareExchangeSystem2();
 
             using PeriodicTimer Timer = new(TimeSpan.FromSeconds(1));
 
@@ -19,87 +19,71 @@ namespace RabbitDeclareExchangeWorker
 
         private void DeclareOrderCreateExchange()
         {
+            model.ExchangeDelete("order.create.unrouted");
             model.ExchangeDelete("order.create");
 
-            model.ExchangeDeclare("order.create", "fanout", true, false);
-        }
-
-        private void DeclareTopicExchangeIntegration()
-        {
-            model.ExchangeDelete("topic.order.create.unrouted");
-            model.ExchangeDelete("topic.order.create.deadletter");
-            model.ExchangeDelete("topic.order.create");
-
             model.QueueDelete("topic.order.create.unrouted");
-            model.QueueDelete("topic.order.create.deadletter");
-            model.QueueDelete("topic.order.create");
 
-            //Unrouted
-            model.ExchangeDeclare("topic.order.create.unrouted", "fanout", true, false);
-            model.QueueDeclare("topic.order.create.unrouted", true, false, false, new Dictionary<string, object> { { "x-queue-type", "quorum" } });
-            model.QueueBind("topic.order.create.unrouted", "topic.order.create.unrouted", string.Empty);
+            model.ExchangeDeclare("order.create.unrouted", "fanout", true, false);
+            model.QueueDeclare("order.create.unrouted", true, false, false, new Dictionary<string, object> { { "x-queue-type", "quorum" } });
+            model.QueueBind("order.create.unrouted", "order.create.unrouted", string.Empty);
 
-            //Deadletter
-            model.ExchangeDeclare("topic.order.create.deadletter", "fanout", true, false);
-            model.QueueDeclare("topic.order.create.deadletter", true, false, false, new Dictionary<string, object> { { "x-queue-type", "quorum" } });
-            model.QueueBind("topic.order.create.deadletter", "topic.order.create.deadletter", string.Empty);
-
-            //Exchange
-            model.ConfirmSelect();
-            model.BasicQos(0, 10, false);
-            model.ExchangeDeclare("topic.order.create", "topic", true, false, new Dictionary<string, object>
+            model.ExchangeDeclare("order.create", "headers", true, false, new Dictionary<string, object>
             {
-                { "alternate-exchange", "topic.order.create.unrouted" }
+                { "alternate-exchange", "order.create.unrouted" }
             });
-            model.QueueDeclare("topic.order.create", true, false, false, new Dictionary<string, object>
+        }
+        
+        private void DeclareExchangeSystem1()
+        {
+            model.ExchangeDelete("system1.order.create.deadletter");
+            model.ExchangeDelete("system1.order.create");
+
+            model.QueueDelete("system1.order.create.deadletter");
+            model.QueueDelete("system1.order.create");
+            
+            model.ExchangeDeclare("system1.order.create.deadletter", "fanout", true, false);
+            model.QueueDeclare("system1.order.create.deadletter", true, false, false, new Dictionary<string, object> { { "x-queue-type", "quorum" } });
+            model.QueueBind("system1.order.create.deadletter", "system1.order.create.deadletter", string.Empty);
+
+            model.ExchangeDeclare("system1.order.create", "fanout", true, false);
+            model.QueueDeclare("system1.order.create", true, false, false, new Dictionary<string, object>
             {
                 { "x-queue-type", "quorum" },
-                { "x-dead-letter-exchange", "topic.order.create.deadletter" },
+                { "x-dead-letter-exchange", "system1.order.create.deadletter" },
                 { "x-delivery-limit", 3 }
             });
-            model.QueueBind("topic.order.create", "topic.order.create", string.Empty);
+            model.QueueBind("system1.order.create", "system1.order.create", string.Empty);
 
-            model.ExchangeBind("topic.order.create", "order.create", string.Empty);
+            model.ExchangeBind("system1.order.create", "order.create", string.Empty);
         }
 
-        private void DeclareHeadersExchangeIntegration()
+        private void DeclareExchangeSystem2()
         {
-            model.ExchangeDelete("headers.order.create.unrouted");
-            model.ExchangeDelete("headers.order.create.deadletter");
-            model.ExchangeDelete("headers.order.create");
+            model.ExchangeDelete("system2.order.create.unrouted");
+            model.ExchangeDelete("system2.order.create.deadletter");
+            model.ExchangeDelete("system2.order.create");
 
-            model.QueueDelete("headers.order.create.unrouted");
-            model.QueueDelete("headers.order.create.deadletter");
-            model.QueueDelete("headers.order.create");
+            model.QueueDelete("system2.order.create.unrouted");
+            model.QueueDelete("system2.order.create.deadletter");
+            model.QueueDelete("system2.order.create");
 
-            //Unrouted
-            model.ExchangeDeclare("headers.order.create.unrouted", "fanout", true, false);
-            model.QueueDeclare("headers.order.create.unrouted", true, false, false, new Dictionary<string, object> { { "x-queue-type", "quorum" } });
-            model.QueueBind("headers.order.create.unrouted", "headers.order.create.unrouted", string.Empty);
+            model.ExchangeDeclare("system2.order.create.deadletter", "fanout", true, false);
+            model.QueueDeclare("system2.order.create.deadletter", true, false, false, new Dictionary<string, object> { { "x-queue-type", "quorum" } });
+            model.QueueBind("system2.order.create.deadletter", "system2.order.create.deadletter", string.Empty);
 
-            //Deadletter
-            model.ExchangeDeclare("headers.order.create.deadletter", "fanout", true, false);
-            model.QueueDeclare("headers.order.create.deadletter", true, false, false, new Dictionary<string, object> { { "x-queue-type", "quorum" } });
-            model.QueueBind("headers.order.create.deadletter", "headers.order.create.deadletter", string.Empty);
-
-            //Exchange
-            model.ConfirmSelect();
-            model.BasicQos(0, 10, false);
-            model.ExchangeDeclare("headers.order.create", "headers", true, false, new Dictionary<string, object>
-            {
-                { "alternate-exchange", "headers.order.create.unrouted" }
-            });
-            model.QueueDeclare("headers.order.create", true, false, false, new Dictionary<string, object>
+            model.ExchangeDeclare("system2.order.create", "headers", true, false);
+            model.QueueDeclare("system2.order.create", true, false, false, new Dictionary<string, object>
             {
                 { "x-queue-type", "quorum" },
-                { "x-dead-letter-exchange", "headers.order.create.deadletter" },
+                { "x-dead-letter-exchange", "system2.order.create.deadletter" },
                 { "x-delivery-limit", 3 }
             });
-            model.QueueBind("headers.order.create", "headers.order.create", string.Empty);
+            model.QueueBind("system2.order.create", "system2.order.create", string.Empty);
 
-            model.ExchangeBind("headers.order.create", "order.create", string.Empty, new Dictionary<string, object>
+            model.ExchangeBind("system2.order.create", "order.create", string.Empty, new Dictionary<string, object>
             {
-                { "integration", true },
+                { "integration-fm-api", true },
                 { "x-match", "all" }
             });
         }
